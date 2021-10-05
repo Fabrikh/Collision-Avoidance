@@ -1,0 +1,4 @@
+<launch>
+    <node name="collision_avoidance" pkg="collision_avoidance_01" type="collision_avoidance" output="screen">
+    </node>
+</launch>
