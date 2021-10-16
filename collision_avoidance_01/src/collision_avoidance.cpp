@@ -8,9 +8,11 @@ ros::Publisher velocity_pub;
 geometry_msgs::Twist VelMsg;
 
 int sensitivity = 800;
+double proximity = 0.3;
 float forceModule = 0;
 float forceAngle = 0;
 bool nearImpact = false;
+bool frontImpact = false;
 bool backCamera = false;
 
 void velocityCallback(const geometry_msgs::Twist::ConstPtr& RecVelMsg){
@@ -27,11 +29,16 @@ void velocityCallback(const geometry_msgs::Twist::ConstPtr& RecVelMsg){
     //Se lo scanner non da informazioni su cosa si trova esattamente dietro il robot e si desidera evitare movimenti pericolosi, limito lo spostamento all'indietro
     if(VelMsg.linear.x < 0 && !backCamera) VelMsg.linear.x /= 10;
 
-    //Se il robot si trova in prossimità di un ostacolo, si modifica la traiettoria per evitarlo
+    //Se il robot si trova in prossimità di un ostacolo, si modifica la traiettoria per evitarlo, inoltre se l'ostacolo è davanti al robot, lo spostamento sarà solo angolare
     if(nearImpact) {
       VelMsg.angular.z += forceAngle;
       nearImpact = false;
       ROS_INFO("Near impact!");
+      if(frontImpact){
+        VelMsg.linear.x = 0;
+        frontImpact = false;
+        ROS_INFO("Front impact!");
+      }
     }
 
     ROS_INFO("Input: X=%f Z=%f \nDeflection: X=%f Z=%f",RecVelMsg->linear.x ,RecVelMsg->angular.z ,VelMsg.linear.x, VelMsg.angular.z);
@@ -59,9 +66,13 @@ void laserCallback(const sensor_msgs::LaserScan::ConstPtr& LaserMsg){
             //La forza respingente è inversamente proporzionale all'ostacolo
             float deflectionForce = 1 / (LaserMsg->ranges[i]);
             
-            //Modifico la traiettoria angolare solo se vi è il rischio di urtare su un lato
-            if(((theta>=M_PI/5 && theta<=M_PI*4/5) || (theta<=-M_PI/5 && theta>=-M_PI*4/5)) && LaserMsg->ranges[i] < 0.25)
+            //Modifico la traiettoria angolare solo se vi è il rischio di urtare, quella lineare è affetta solo se l'ostacolo è davanti alla camera
+            if(LaserMsg->ranges[i] < proximity){
               nearImpact = true;
+              if(theta >= -M_PI/3 && theta <= M_PI/3)
+              frontImpact = true;
+            }
+              
             theta += M_PI;
             totalForce[0] += deflectionForce * cos (theta);
             totalForce[1] += deflectionForce * sin (theta);            
@@ -76,7 +87,13 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "collision_avoidance");
 
   ros::NodeHandle n;
+  ros::NodeHandle nh("~");
 
+  nh.param("sense", sensitivity, 800);
+  ROS_INFO("Sensitivity set to: %d", sensitivity);
+
+  nh.param("prox", proximity, 0.3);
+  ROS_INFO("Proximity set to: %f", proximity);
   //Il nodo collision_avoidance pubblica sul topic cmd_vel ed è iscritto ai topic cmd_vel e base_scan
   velocity_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
