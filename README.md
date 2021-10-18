@@ -27,7 +27,7 @@ rosrun stage_ros stageros cappero_laser_odom_diag_2020-05-06-16-26-03.world
 
 * Uno per avviare il nodo collision_avoidance tramite comando:
 ```bash
-rosrun collision_avoidance_01 collision_avoidance _sens:=800 _prox:=0.3
+rosrun collision_avoidance_01 collision_avoidance _sens:=800 _prox:=0.5
 ```
 _sens e _prox sono degli argomenti facoltativi che servono per testare il movimento in situazioni differenti, un'alta sensibilità limiterà poco i movimenti, mentre una bassa dipenderà molto dalla posizione degli ostacoli, è consigliabile una sensibilità nell'ordine delle centinaia, la variabile per la prossimità è invece preferibile nell'ordine delle decine e al suo aumento renderà il movimento più cauto in prossimità di ostacoli.
 
