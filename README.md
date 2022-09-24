@@ -33,7 +33,7 @@ _sens e _prox sono degli argomenti facoltativi che servono per testare il movime
 
 * Uno per pubblicare i cmd_vel necessari a far muovere il robot:
 ```bash
-rostopic pub -r 10 cmd_vel geometry_msg/Twist -- '[2.0, 0.0, 0.0]' '[0.0, 0.0, 1.0]'
+rostopic pub -r 10 ca_cmd_vel geometry_msg/Twist -- '[2.0, 0.0, 0.0]' '[0.0, 0.0, 1.0]'
 ```
 
 Per avviare il test senza problemi è consigliabile inserire i comandi nell'ordine sopra indicato, ma è possibile inserirli in altri ordini purché l'avvio del core ROS rimanga per primo.
