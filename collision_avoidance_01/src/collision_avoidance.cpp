@@ -21,7 +21,7 @@ void velocityCallback(const geometry_msgs::Twist::ConstPtr& RecVelMsg){
   forceModule *= cos(forceAngle)*RecVelMsg->linear.x/sensitivity;
 
   //Per non deviare la traiettoria, inizialmente si va a modificare solo la componente lineare
-  VelMsg.linear.x = RecVelMsg->linear.x - forceModule;  
+  VelMsg.linear.x = RecVelMsg->linear.x + forceModule;  
   VelMsg.angular.z = RecVelMsg->angular.z;
 
   //Se lo scanner non da informazioni su cosa si trova esattamente dietro il robot e si desidera evitare movimenti pericolosi, limito lo spostamento all'indietro
@@ -33,7 +33,7 @@ void velocityCallback(const geometry_msgs::Twist::ConstPtr& RecVelMsg){
     nearImpact = false;
     ROS_INFO("Near impact!");
     if(frontImpact){
-      VelMsg.linear.x = -forceModule/10;
+      VelMsg.linear.x = forceModule/100;
       frontImpact = false;
       ROS_INFO("Front impact!");
     }
