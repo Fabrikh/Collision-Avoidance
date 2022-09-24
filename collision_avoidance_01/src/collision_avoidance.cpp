@@ -16,40 +16,33 @@ bool frontImpact = false;
 bool backCamera = false;
 
 void velocityCallback(const geometry_msgs::Twist::ConstPtr& RecVelMsg){
-  //Per evitare di ricevere, elaborare e pubblicare dei topic creati dal nodo stesso, si effettuano dei controlli tramite il VelMsg
-  if(RecVelMsg->linear.x != 0 && (RecVelMsg->linear.x != VelMsg.linear.x || RecVelMsg->angular.z != VelMsg.angular.z)){
 
-    //Il modulo generato è in genere più grande della velocità data in input, quindi lo ridimensiono di conseguenza e prendo la componente che incide sul movimento lineare
-    forceModule *= cos(forceAngle)*RecVelMsg->linear.x/sensitivity;
+  //Il modulo generato è in genere più grande della velocità data in input, quindi lo ridimensiono di conseguenza e prendo la componente che incide sul movimento lineare
+  forceModule *= cos(forceAngle)*RecVelMsg->linear.x/sensitivity;
 
-    //Per non deviare la traiettoria, inizialmente si va a modificare solo la componente lineare
-    VelMsg.linear.x = RecVelMsg->linear.x + forceModule;  
-    VelMsg.angular.z = RecVelMsg->angular.z;
+  //Per non deviare la traiettoria, inizialmente si va a modificare solo la componente lineare
+  VelMsg.linear.x = RecVelMsg->linear.x - forceModule;  
+  VelMsg.angular.z = RecVelMsg->angular.z;
 
-    //Se lo scanner non da informazioni su cosa si trova esattamente dietro il robot e si desidera evitare movimenti pericolosi, limito lo spostamento all'indietro
-    if(VelMsg.linear.x < 0 && !backCamera) VelMsg.linear.x /= 10;
+  //Se lo scanner non da informazioni su cosa si trova esattamente dietro il robot e si desidera evitare movimenti pericolosi, limito lo spostamento all'indietro
+  if(VelMsg.linear.x < 0 && !backCamera) VelMsg.linear.x /= 10;
 
-    //Se il robot si trova in prossimità di un ostacolo, si modifica la traiettoria per evitarlo, inoltre se l'ostacolo è davanti al robot, lo spostamento sarà solo angolare
-    if(nearImpact) {
-      VelMsg.angular.z += forceAngle;
-      nearImpact = false;
-      ROS_INFO("Near impact!");
-      if(frontImpact){
-        VelMsg.linear.x = 0;
-        frontImpact = false;
-        ROS_INFO("Front impact!");
-      }
+  //Se il robot si trova in prossimità di un ostacolo, si modifica la traiettoria per evitarlo, inoltre se l'ostacolo è davanti al robot, lo spostamento sarà solo angolare
+  if(nearImpact) {
+    VelMsg.angular.z += forceAngle;
+    nearImpact = false;
+    ROS_INFO("Near impact!");
+    if(frontImpact){
+      VelMsg.linear.x = -forceModule/10;
+      frontImpact = false;
+      ROS_INFO("Front impact!");
     }
-
-    ROS_INFO("Input: X=%f Z=%f \nDeflection: X=%f Z=%f",RecVelMsg->linear.x ,RecVelMsg->angular.z ,VelMsg.linear.x, VelMsg.angular.z);
-
-    velocity_pub.publish(VelMsg);
-
-  } else {
-    //Vengono reimpostati a 0 i valori da controllare, non pubblicando sul topic in questa eventualità, non si creano problemi coi messaggi generati dal nodo
-    VelMsg.linear.x = 0;
-    VelMsg.angular.z = 0;
   }
+
+  ROS_INFO("Input: X=%f Z=%f \nDeflection: X=%f Z=%f",RecVelMsg->linear.x ,RecVelMsg->angular.z ,VelMsg.linear.x, VelMsg.angular.z);
+
+  velocity_pub.publish(VelMsg);
+
 }
 
 void laserCallback(const sensor_msgs::LaserScan::ConstPtr& LaserMsg){
@@ -98,7 +91,7 @@ int main(int argc, char **argv)
   velocity_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
   ros::Subscriber subScan = n.subscribe("base_scan", 1, laserCallback);
-  ros::Subscriber subVel = n.subscribe("cmd_vel", 2, velocityCallback);
+  ros::Subscriber subVel = n.subscribe("ca_cmd_vel", 2, velocityCallback);
 
   VelMsg.linear.x = 0;
   VelMsg.angular.z = 0;
